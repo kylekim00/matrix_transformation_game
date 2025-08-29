@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrix Transformation Game</title>
+  <style>
+    body { 
+      margin: 0; 
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: #ffffff;
+      overflow: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    .subtitle {
+      font-size: 1.2rem;
+      margin-bottom: 4rem;
+      opacity: 0.8;
+    }
+    
+    .menu-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-width: 300px;
+      width: 100%;
+    }
+    
+    .menu-btn {
+      padding: 12px 36px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: bold;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .menu-btn:hover {
+      background-color: #3e8e41;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .tutorial-btn {
+      background-color: #2196F3;
+    }
+    
+    .tutorial-btn:hover {
+      background-color: #1565C0;
+    }
+    
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    #tutorial-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .tutorial-content {
+      max-width: 700px;
+      width: 90%;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 30px;
+      color: #333;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .tutorial-content h2 {
+      color: #1e3c72;
+      margin-top: 0;
+    }
+
+    .tutorial-section {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .tutorial-section h3 {
+      color: #2196F3;
+      margin-bottom: 10px;
+    }
+
+    .tutorial-section ul {
+      padding-left: 20px;
+    }
+
+    .tutorial-section li {
+      margin-bottom: 8px;
+    }
+
+    .close-tutorial {
+      margin-top: 20px;
+      background-color: #607D8B;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .close-tutorial:hover {
+      background-color: #455A64;
+    }
+  </style>
+</head>
+<body>
+  <h1>Matrix Transformation Challenge</h1>
+  <div class="subtitle">딥러닝 함수가 어떻게 데이터를 분류하는지 알아보자고요!</div>
+  
+  <div class="menu-container">
+    <button class="menu-btn" onclick="window.location.href='stage-select.html'">Play</button>
+    <button class="menu-btn tutorial-btn" onclick="showTutorial()">How to Play</button>
+  </div>
+  
+  <div class="footer">김홍권 * 2025 그래픽스 프로젝트</div>
+
+  <!-- Tutorial Overlay -->
+  <div id="tutorial-overlay">
+    <div class="tutorial-content">
+      <h2>How to Play</h2>
+      
+      <div class="tutorial-section">
+        <h3>게임 방법</h3>
+        <p>빨간 점과 파란 점이 있습니다. 딥러닝에서는 두 데이터를 비선형적으로 분류를 할 수 있습니다. 이 과정은 선형변환과 비선형함수를 써서 공간을 비선형적으로 왜곡시키는 작업으로 이루어집니다! 
+          두 데이터를 분류하여 딥러닝이 어떻게 데이터를 분류하는지 직관적으로 알아보자고요!</p>
+      </div>
+      
+      <div class="tutorial-section">
+        <h3>선형변환</h3>
+        <p>여러분이 선형대수학 시간에 배운 선형 변환을 여기서 적용을 합니다.</p>
+        <ul>
+          <li><strong>Rotate:</strong> 선형 변환에서 회전의 역할을 담당합니다. rotate 버튼을 누르고 커서를 당겨 정점을 중심으로 공간을 회전해보세요.</li>
+          <li><strong>Shear:</strong> 선형 변환에서 shearing의 역할을 담당합니다. shear 버튼을 누르고 커서를 당겨 공간을 기울여보세요.</li>
+          <li><strong>Shift:</strong> 쉬프트는 공간의 이동을 담당합니다. shift 버튼을 누르고 커서를 당겨 공간을 이동시켜보세요.</li>
+          <li><strong>Scale:</strong> 스케일은 정점을 기준으로 공간을 확장시키거나 축소시킵니다. scale 버튼을 누르고 커서를 당겨 공간의 스케일을 조정해보세요.</li>
+          <li><strong>Camera:</strong> 쉬프트를 누르고 움직이면  카메라의 시점이 바뀝니다. 시점을 바꿔가면서 공간을 왜곡하세요!</li>
+        </ul>
+      </div>
+      
+      <div class="tutorial-section">
+        <h3>ReLU 함수</h3>
+        <p>비선형 함수인 reLU 함수를 쓸 수 있는 세번의 기회가 있습니다! reLU함수는 모든 음수 값을 0으로 만들어줍니다. 즉 1사분면으로 모든 공간을 구겨넣습니다! reLU함수를 이용해 비선형적인 공간 왜곡을 만들어봐요!</p>
+      </div>
+      
+      <div class="tutorial-section">
+        <h3>타이머</h3>
+        <p>고득점을 위해서는 빠른 판단이 필요합니다! 타이머가 흘러가고 있으니 최대한 빨리 한번 데이터를 분류해보세요!</p>
+      </div>
+      
+      <div class="tutorial-section">
+        <h3>팁</h3>
+        <ul>
+          <li>  undo/redo를 이용해 실수한 부분을 바로잡거나 리셋하세요. </li>
+          <li>각각의 transformation에 의미를 주의깊게 보세요. 다 의미가 있는 연산입니다!</li>
+          <li>우리가 선형변환과 reLU를 써서 공간을 왜곡하여 데이터를 분리하는 이 과정이 딥러닝의 과정이라는걸 유념하고 생각하면서 플레이를 해보자고요!</li>
+        </ul>
+      </div>
+      
+      <button class="close-tutorial" onclick="hideTutorial()">Got it!</button>
+    </div>
+  </div>
+
+  <script>
+    function showTutorial() {
+      document.getElementById('tutorial-overlay').style.display = 'flex';
+    }
+    
+    function hideTutorial() {
+      document.getElementById('tutorial-overlay').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

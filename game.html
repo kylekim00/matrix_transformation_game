@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Linear Transformation</title>
+  <style>
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    #game-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 15px;
+      z-index: 100;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    #game-status {
+      display: flex;
+      gap: 20px;
+    }
+
+    .status-item {
+      padding: 8px 12px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+    }
+
+    #timer {
+      color: #FFC107;
+    }
+
+    #relu-counter {
+      color: #4CAF50;
+    }
+
+    #game-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .game-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      background-color: #607D8B;
+      color: white;
+      transition: all 0.2s ease;
+    }
+
+    .game-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    #exit-btn {
+      background-color: #F44336;
+    }
+
+    #info {
+      position: absolute;
+      top: 70px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 300px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      max-height: calc(90vh - 70px);
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      flex-grow: 1;
+    }
+
+    .transform-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .transform-btn.active {
+      background-color: #2E7D32;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+    }
+
+    .control-btn {
+      background-color: #FF9800;
+      color: white;
+    }
+
+    .undo-btn {
+      background-color: #F44336;
+      color: white;
+    }
+
+    .redo-btn {
+      background-color: #9C27B0;
+      color: white;
+    }
+
+    #reluBtn {
+      position: relative;
+    }
+
+    #reluBtn.disabled {
+      background-color: #9E9E9E;
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .active-mode {
+      margin-top: 10px;
+      padding: 8px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .separator {
+      height: 1px;
+      background-color: #ddd;
+      margin: 10px 0;
+    }
+
+    h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .transformation-matrix {
+      margin-top: 10px;
+      padding: 8px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .matrix-display table {
+      width: 100%;
+      text-align: center;
+      font-family: monospace;
+    }
+
+    .matrix-display td {
+      padding: 2px;
+      border: 1px solid #ddd;
+      background-color: white;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      margin-right: 5px;
+      border-radius: 50%;
+    }
+
+    #victory-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .victory-message {
+      background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 500px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      color: white;
+    }
+    
+    .victory-message h2 {
+      margin-top: 0;
+      font-size: 2.5rem;
+    }
+    
+    .score-info {
+      margin: 20px 0;
+      font-size: 1.1rem;
+    }
+    
+    .score {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 10px 0;
+      color: #FFEB3B;
+    }
+    
+    .victory-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .victory-btn {
+      padding: 12px 0;
+      margin: 0;
+      font-size: 1.1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: bold;
+    }
+    
+    .next-btn {
+      background-color: #FFC107;
+      color: #333;
+    }
+    
+    .retry-btn {
+      background-color: #2196F3;
+      color: white;
+    }
+    
+    .menu-btn {
+      background-color: #607D8B;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Game Overlay with Timer and Buttons -->
+  <div id="game-overlay">
+    <div id="game-status">
+      <div id="timer" class="status-item">Time: 00:00</div>
+      <div id="relu-counter" class="status-item">ReLU: 3</div>
+    </div>
+    <div id="game-controls">
+      <button id="restart-btn" class="game-btn">Restart</button>
+      <button id="exit-btn" class="game-btn">Exit</button>
+    </div>
+  </div>
+
+  <div id="info">
+    <h3>3D Linear Transformation</h3>
+    
+    <div class="btn-group">
+      <button id="rotateBtn" class="btn transform-btn">Rotate</button>
+      <button id="shearBtn" class="btn transform-btn">Shear</button>
+      <button id="shiftBtn" class="btn transform-btn">Shift</button>
+      <button id="scaleBtn" class="btn transform-btn">Scale</button>
+    </div>
+    
+    <div class="btn-group">
+      <button id="undoBtn" class="btn undo-btn">Undo</button>
+      <button id="redoBtn" class="btn redo-btn">Redo</button>
+      <button id="resetBtn" class="btn control-btn">Reset</button>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="transformation-matrix">
+      <h4 style="margin: 5px 0;">현재 변환 matrix:</h4>
+      <div class="matrix-display" id="modeMatrixDisplay">
+        <table style="border-collapse: collapse; width: 100%; text-align: center; font-family: monospace;">
+          <tr>
+            <td>1.00</td><td>0.00</td><td>0.00</td><td>0.00</td>
+          </tr>
+          <tr>
+            <td>0.00</td><td>1.00</td><td>0.00</td><td>0.00</td>
+          </tr>
+          <tr>
+            <td>0.00</td><td>0.00</td><td>1.00</td><td>0.00</td>
+          </tr>
+          <tr>
+            <td>0.00</td><td>0.00</td><td>0.00</td><td>1.00</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    <div class="transformation-matrix">
+      <h4 style="margin: 5px 0;">종합 변환 matrix:</h4>
+      <div class="matrix-display" id="matrixDisplay">
+        <table style="border-collapse: collapse; width: 100%; text-align: center; font-family: monospace;">
+          <tr>
+            <td>1.00</td><td>0.00</td><td>0.00</td><td>0.00</td>
+          </tr>
+          <tr>
+            <td>0.00</td><td>1.00</td><td>0.00</td><td>0.00</td>
+          </tr>
+          <tr>
+            <td>0.00</td><td>0.00</td><td>1.00</td><td>0.00</td>
+          </tr>
+          <tr>
+            <td>0.00</td><td>0.00</td><td>0.00</td><td>1.00</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    <div class="btn-group">
+      <button id="reluBtn" class="btn control-btn">ReLU (3)</button>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="legend" id="dataLegend">
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #ff0000;"></div>
+        <span>Class 0</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background-color: #0000ff;"></div>
+        <span>Class 1</span>
+      </div>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="active-mode">
+      <div><strong>팁:</strong> shift키를 눌러 카메라를 이동하세요!</div>
+    </div>
+    
+    <div class="active-mode">
+      <div id="modeDisplay">현재 모드: Rotate</div>
+      <div id="modeInstructions">클릭하여 적절한 선형변환을 만들어보세요!</div>
+      <div id="cameraStatus">카메라: Normal</div>
+    </div>
+  </div>
+
+  <!-- Victory Overlay -->
+  <div id="victory-overlay">
+    <div class="victory-message">
+      <h2>성공!</h2>
+      <div class="score-info">
+        <p>데이터 분류를 했습니다!</p>
+        <div>시간: <span id="final-time">00:00</span></div>
+        <div>ReLU 사용: <span id="relu-uses">0</span>/3</div>
+      </div>
+      <div class="score">Score: <span id="final-score">0</span></div>
+      <div class="victory-buttons">
+        <button class="victory-btn next-btn" onclick="goToNextStage()">다음 챌린지</button>
+        <button class="victory-btn retry-btn" onclick="retryStage()">한번 더!</button>
+        <button class="victory-btn menu-btn" onclick="goToMenu()"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Global variables
+    let scene, camera, renderer, raycaster, plane;
+    let points, origPositions = [], transformedPositions = [];
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let currentMode = 'rotate';
+    let transformMatrix = new THREE.Matrix4().identity();
+    let currentOperationMatrix = new THREE.Matrix4().identity(); // Track current operation matrix
+    let initialCameraPosition = new THREE.Vector3(5, 5, 5);
+    let pointLabels = []; // Store label for each point
+    let useDatasetColors = true; // Always use dataset colors
+    const datasetColors = {0: 0xff0000, 1: 0x0000ff}; // Red for class 0, blue for class 1
+
+    // Game-specific variables
+    let reluChances = 3;
+    let startTime = Date.now();
+    let timerInterval;
+    let elapsedTime = 0;
+    let gameCompleted = false;
+
+    // Undo/redo history
+    let transformHistory = [];
+    let currentUndoIndex = -1;
+
+    // Create vectors to store mouse position in 3D space
+    let startDragPoint = new THREE.Vector3();
+    let currentDragPoint = new THREE.Vector3();
+
+    // Custom sphere shader materials
+    let sphereShaderMaterials = {};
+
+    // Initialize the application when the page loads
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      // Load ReLU chances from localStorage
+      if (localStorage.getItem('reluChances')) {
+        reluChances = parseInt(localStorage.getItem('reluChances'));
+        document.getElementById('reluBtn').textContent = `ReLU (${reluChances})`;
+        document.getElementById('relu-counter').textContent = `ReLU: ${reluChances}`;
+      }
+
+      // Load start time from localStorage
+      if (localStorage.getItem('startTime')) {
+        startTime = parseInt(localStorage.getItem('startTime'));
+      } else {
+        startTime = Date.now();
+        localStorage.setItem('startTime', startTime);
+      }
+
+      //타이머 시작.(이거 나중에 수정을 해야됨. 이거 거꾸로 가야함.)
+      startTimer();
+
+      // Create scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x555555);
+      
+      // Create camera
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      
+      // Set up camera with fixed distance
+      const fixedDistance = 8.66; // sqrt(5² + 5² + 5²)
+      //방향 설정하고
+      camera.position.copy(initialCameraPosition);
+      //단위 벡터로 만든 후에
+      camera.position.normalize();
+      //스칼라를 곱해주어 원점에서 모든 거리를 유지하도록 해준다.
+      camera.position.multiplyScalar(fixedDistance);
+      //그리고 평생 000만 쳐다보게 한다.
+      camera.lookAt(0, 0, 0);
+      
+      // Create renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // renderer.setPixelRatio(window.devicePixelRatio);
+      document.body.appendChild(renderer.domElement);
+      
+      //모든 곳에 ambient을 뿌려준다.
+      const ambientLight = new THREE.AmbientLight(0xaaaaaa);
+      scene.add(ambientLight);
+      
+      //햇빛처럼 한 점에서 빛을 뿌려줌.
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(1, 1, 1).normalize();
+      scene.add(directionalLight);
+      
+      //이건 마우스를 컨트롤 하기 위한 놈.
+      raycaster = new THREE.Raycaster();
+      
+      plane = new THREE.Mesh(
+        //mesh geometry이다. 
+        new THREE.PlaneGeometry(100, 100),
+        //mesh basic material이다.
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      //plane
+      plane.lookAt(camera.position);
+      scene.add(plane);
+      
+      //이건 plane이다. 이거 약간 relu 사이즈에 맞게 하면 좋을 것 같은데 이렇게가 아니라. 나중에 한번 geometry를 수정해서 한번 만들어보자.
+      const gridHelper = new THREE.GridHelper(10, 10);
+      scene.add(gridHelper);
+      
+      const axesHelper = new THREE.AxesHelper(5);//이건 axis다.
+      scene.add(axesHelper);
+
+      //이건 ReLU boundary를 표현할 것이다.
+
+      let relu_grid = new ReLUGrid();
+      relu_grid.addScene(scene);
+
+      // Initialize custom sphere shader materials
+      initSphereShaderMaterials();
+
+      // Load the selected dataset
+      loadSelectedDataset();
+      
+      // Set up event listeners
+      setupEvents();
+      
+      // Start animation loop
+      animate();
+      
+      // Set initial mode
+      setMode('rotate');
+      
+      // Initialize matrix display
+      updateMatrixDisplay();
+      updateModeMatrixDisplay(currentOperationMatrix);
+      
+      // Initialize undo/redo buttons
+      updateUndoRedoButtons();
+    }
+function initSphereShaderMaterials() {
+  const vertexShader = `
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    varying vec3 vViewPosition;
+
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vPosition      = mvPosition.xyz;     // view-space position
+      vViewPosition  = -mvPosition.xyz;    // 카메라 쪽으로 향하는 벡터
+      gl_Position    = projectionMatrix * mvPosition;
+    }
+  `;
+
+  const fragmentShader = `
+    uniform vec3 color;                       // 물체 기본색
+    uniform vec3 ambientLightColor;           // ambient 색
+    uniform vec3 directionalLightColor;       // 빛 색
+    uniform vec3 directionalLightDirection;   // 빛 방향 (view-space 기준)
+    uniform float shininess;                  // 반짝반짝
+
+    varying vec3 vNormal;                     //아까 위에서 넘어온 거
+    varying vec3 vViewPosition;               
+
+    void main() {
+      vec3 N = normalize(vNormal);                      //법선벡터로 바꿔주기
+      vec3 L = normalize(directionalLightDirection);    
+      vec3 V = normalize(vViewPosition);                
+
+      vec3 ambient = color * ambientLightColor;         //컬러에 맞게 앰비언트 혼합.
+
+      //diffuse 연산
+      float diff = max(dot(N, L), 0.0);                 //방향 계산
+      vec3 diffuse = color * directionalLightColor * diff; //빛 색이랑 물체 색이랑 diffuse 짬뽕
+
+      //specular 연산
+      vec3 H = normalize(L + V);                        // half-vector만 써서 효율적으로 연산
+      float spec = pow(max(dot(N, H), 0.0), shininess); // 방향 연산하고 shininess 반영
+      vec3 specular = directionalLightColor * spec *0.0;     // 빛 색과 짬뽕. 물체색은 넣지 않는다.
+
+      vec3 fColor =  ambient + diffuse + specular;
+      gl_FragColor = vec4(fColor, 1.0);
+    }
+  `;
+
+  for (const label in datasetColors) {
+    const base = new THREE.Color(datasetColors[label]);
+
+    sphereShaderMaterials[label] = new THREE.ShaderMaterial({
+      uniforms: {
+        color: { value: base },                           // 기본 색
+        ambientLightColor: { value: new THREE.Color(0xaaaaaa) },
+        directionalLightColor: { value: new THREE.Color(0xffffff)},
+        directionalLightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
+        shininess: { value: 64.0 }                        // 취향 따라 8~128
+      },
+      vertexShader,
+      fragmentShader
+    });
+  }
+}
+
+    class ReLUGrid {
+    constructor(color = 0xffffff) {
+        let size = 5;
+        this.mesh = new THREE.Group();
+
+        // Create 3 planes
+        this.p1 = new ReLU_Plane(size, color);
+        this.p2 = new ReLU_Plane(size, color);
+        this.p3 = new ReLU_Plane(size, color);
+
+        // Position them differently if needed
+        this.p1.group.rotation.x = Math.PI/2;
+        this.p2.group.rotation.y = -Math.PI/2;
+        
+        
+
+        // Add their groups to the grid
+        this.mesh.add(this.p1.group);
+        this.mesh.add(this.p2.group);
+        this.mesh.add(this.p3.group);
+    }
+
+    addScene(scene) {
+        scene.add(this.mesh); // You can now add the whole thing
+    }
+}
+
+
+class ReLU_Plane {
+    constructor(size, color = 0xffffff) {
+        this.geometry = new THREE.BufferGeometry();
+        this.line_geometry = new THREE.BufferGeometry();
+
+        let vertices = new Float32Array([
+            0, 0, 0,
+            size, 0, 0,
+            size, size, 0,
+            0, size, 0
+        ]);
+
+        let indices = new Uint16Array([
+            0, 1, 2,
+            0, 2, 3
+        ]);
+
+        let line_indices = new Uint16Array([
+            0, 1,
+            1, 2,
+            2, 3,
+            3, 0
+        ]);
+
+        this.geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        this.geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+        this.line_geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        this.line_geometry.setIndex(new THREE.BufferAttribute(line_indices, 1));
+
+        this.mesh_material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+        this.line_material = new THREE.LineBasicMaterial({ color: 0xffffff});
+
+        this.mesh = new THREE.Mesh(this.geometry, this.mesh_material);
+        this.line = new THREE.LineSegments(this.line_geometry, this.line_material);
+
+        this.group = new THREE.Group();
+        this.group.add(this.mesh);
+        this.group.add(this.line);
+    }
+
+    addScene(scene) {
+        scene.add(this.group);
+    }
+}
+
+
+
+    function loadSelectedDataset() {
+      const selectedCsvFile = localStorage.getItem('selectedCsvFile');
+      const customCsvData = localStorage.getItem('customCsvData');
+      
+      if (customCsvData) {
+        const data = parseCSVDataset(customCsvData);
+        load2DDataset(data);                                          //설명할 것
+      } else if (selectedCsvFile) {    //만약 기존에 있는 데이터셋 버튼을 누르면 이걸로 선택됨.
+        fetch(selectedCsvFile)         //         
+          .then(response => response.text())
+          .then(csvData => {
+            const data = parseCSVDataset(csvData);
+            load2DDataset(data);
+          })
+          .catch(error => {
+            console.error('Error loading CSV:', error);
+            createPoints(30);
+          });
+      } else {
+        createPoints(30);
+      }
+    }
+
+    // Start the timer
+    function startTimer() {
+      const timerElement = document.getElementById('timer');
+      
+      timerInterval = setInterval(() => {
+        if (gameCompleted) return;
+        
+        elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60).toString().padStart(2, '0');
+        const seconds = (elapsedTime % 60).toString().padStart(2, '0');
+        
+        timerElement.textContent = `Time: ${minutes}:${seconds}`;
+      }, 1000);
+    }
+
+    // Set up event listeners
+    function setupEvents() {
+      // Mode buttons
+      document.getElementById('rotateBtn').addEventListener('click', () => setMode('rotate'));
+      document.getElementById('shearBtn').addEventListener('click', () => setMode('shear'));
+      document.getElementById('shiftBtn').addEventListener('click', () => setMode('shift'));
+      document.getElementById('scaleBtn').addEventListener('click', () => setMode('scale'));
+      
+      // ReLU button with limited uses
+      document.getElementById('reluBtn').addEventListener('click', () => {
+        if (reluChances > 0) {
+          reluChances--;
+          document.getElementById('reluBtn').textContent = `ReLU (${reluChances})`;
+          document.getElementById('relu-counter').textContent = `ReLU: ${reluChances}`;
+          localStorage.setItem('reluChances', reluChances);
+          
+          // Apply ReLU transformation
+          applyReLU();
+          
+          // Disable button if no more chances
+          if (reluChances === 0) {
+            document.getElementById('reluBtn').classList.add('disabled');
+          }
+        }
+      });
+      
+      // Undo/Redo buttons
+      document.getElementById('undoBtn').addEventListener('click', undo);
+      document.getElementById('redoBtn').addEventListener('click', redo);
+      
+      // Reset button
+      document.getElementById('resetBtn').addEventListener('click', resetAll);
+      
+      // Game control buttons
+      document.getElementById('restart-btn').addEventListener('click', restartGame);
+      document.getElementById('exit-btn').addEventListener('click', exitGame);
+      
+      // Mouse events
+      renderer.domElement.addEventListener('mousedown', onMouseDown);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+      
+      // Key events for camera control
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Shift') {
+          document.getElementById('cameraStatus').textContent = 'Camera: Ready';
+          document.body.style.cursor = 'grab';
+        }
+      });
+      
+      window.addEventListener('keyup', (event) => {
+        if (event.key === 'Shift') {
+          document.getElementById('cameraStatus').textContent = 'Camera: Normal';
+          document.body.style.cursor = 'default';
+        }
+      });
+      
+      // Window resize
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    // Animation loop with victory check
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // Check for victory if not already completed
+      if (!gameCompleted) {
+        checkVictoryCondition();
+      }
+      
+      renderer.render(scene, camera);
+    }
+
+    // Check if the player has separated the classes
+    function checkVictoryCondition() {
+      // Calculate the separation between classes
+      const separation = calculateClassSeparation();
+      
+      // Victory if separation exceeds threshold
+      if (separation > 3.0) {
+        gameCompleted = true;
+        showVictoryScreen();
+      }
+    }
+
+    // Calculate separation between classes
+    function calculateClassSeparation() {
+      if (transformedPositions.length === 0 || pointLabels.length === 0) return 0;
+      
+      // Calculate the centroids of each class
+      const centroids = {0: new THREE.Vector3(0, 0, 0), 1: new THREE.Vector3(0, 0, 0)};
+      const counts = {0: 0, 1: 0};
+      
+      for (let i = 0; i < transformedPositions.length; i += 3) {
+        const pointIndex = i / 3;
+        const label = pointLabels[pointIndex];
+        
+        centroids[label].x += transformedPositions[i];
+        centroids[label].y += transformedPositions[i + 1];
+        centroids[label].z += transformedPositions[i + 2];
+        counts[label]++;
+      }
+      
+      // Normalize centroids
+      if (counts[0] > 0) {
+        centroids[0].divideScalar(counts[0]);
+      }
+      if (counts[1] > 0) {
+        centroids[1].divideScalar(counts[1]);
+      }
+      
+      // Return distance between centroids
+      return centroids[0].distanceTo(centroids[1]);
+    }
+
+    // Show victory screen
+    function showVictoryScreen() {
+      // Stop the timer
+      clearInterval(timerInterval);
+      
+      // Calculate final score
+      const timeBonus = Math.max(0, 300 - elapsedTime) * 10; // More points for faster completion
+      const reluBonus = reluChances * 1000; // More points for fewer ReLU uses
+      const finalScore = 5000 + timeBonus + reluBonus;
+      
+      // Update victory screen elements
+      document.getElementById('final-time').textContent = formatTime(elapsedTime);
+      document.getElementById('relu-uses').textContent = 3 - reluChances;
+      document.getElementById('final-score').textContent = finalScore;
+      
+      // Show the victory overlay
+      document.getElementById('victory-overlay').style.display = 'flex';
+    }
+
+    // Format time for display (mm:ss)
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const secs = (seconds % 60).toString().padStart(2, '0');
+      return `${mins}:${secs}`;
+    }
+
+    // Restart the current game
+    function restartGame() {
+      // Reset timer
+      startTime = Date.now();
+      localStorage.setItem('startTime', startTime);
+      elapsedTime = 0;
+      gameCompleted = false;
+      
+      // Reset ReLU chances
+      reluChances = 3;
+      localStorage.setItem('reluChances', reluChances);
+      document.getElementById('reluBtn').textContent = `ReLU (${reluChances})`;
+      document.getElementById('relu-counter').textContent = `ReLU: ${reluChances}`;
+      document.getElementById('reluBtn').classList.remove('disabled');
+      
+      // Reload dataset
+      loadSelectedDataset();
+      
+      // Clear any victory overlay
+      document.getElementById('victory-overlay').style.display = 'none';
+    }
+
+    // Exit game and return to stage select
+    function exitGame() {
+      window.location.href = 'stage-select.html';
+    }
+
+    // Go to next stage from victory screen
+    function goToNextStage() {
+      const selectedCsvFile = localStorage.getItem('selectedCsvFile');
+      
+      // Determine next stage
+      if (selectedCsvFile === 'circles.csv') {
+        localStorage.setItem('selectedCsvFile', 'spirals.csv');
+      } else {
+        // If on spirals or custom, go back to stage select
+        window.location.href = 'stage-select.html';
+        return;
+      }
+      
+      // Reset for new stage
+      localStorage.setItem('reluChances', 3);
+      localStorage.setItem('startTime', Date.now());
+      
+      // Reload the page to start new stage
+      window.location.reload();
+    }
+
+    // Retry current stage from victory screen
+    function retryStage() {
+      restartGame();
+    }
+
+    // Go back to menu from victory screen
+    function goToMenu() {
+      window.location.href = 'stage-select.html';
+    }
+
+    // Get 3D point from mouse position
+    function getPointInWorld(clientX, clientY) {
+      // Calculate mouse position in normalized device coordinates
+      const mouse = new THREE.Vector2(
+        (clientX / window.innerWidth) * 2 - 1,
+        -(clientY / window.innerHeight) * 2 + 1
+      );
+      
+      // Update the picking ray with the camera and mouse position
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Calculate objects intersecting the picking ray
+      const intersects = raycaster.intersectObject(plane);
+      
+      if (intersects.length > 0) {
+        // Return the point of intersection
+        return intersects[0].point;
+      }
+      
+      return null;
+    }
+
+    // All mouse event handler functions
+    function onMouseDown(event) {
+      isDragging = true;
+      previousMousePosition = { x: event.clientX, y: event.clientY };
+      
+      // Check if Shift key is pressed for camera control
+      const isViewMode = event.shiftKey;
+      document.getElementById('cameraStatus').textContent = isViewMode ? 'Camera: Moving' : 'Camera: Normal';
+      document.body.style.cursor = isViewMode ? 'grab' : 'default';
+      
+      // Always update plane orientation to face camera
+      plane.lookAt(camera.position);
+      
+      // Store initial drag point
+      const point = getPointInWorld(event.clientX, event.clientY);
+      if (point) {
+        startDragPoint.copy(point);
+        currentDragPoint.copy(point);
+      }
+      
+      // Reset current operation matrix when starting new drag
+      currentOperationMatrix.identity();
+      updateModeMatrixDisplay(currentOperationMatrix);
+    }
+
+    function onMouseMove(event) {
+      if (!isDragging) return;
+      
+      // Check if Shift key is pressed for camera control
+      const isViewMode = event.shiftKey;
+      
+      // For screen space movements, calculate traditional delta
+      const deltaMove = {
+        x: event.clientX - previousMousePosition.x,
+        y: event.clientY - previousMousePosition.y
+      };
+      
+      if (isViewMode) {
+        // Orbital camera controls
+        const rotateSpeed = 0.01;
+        
+        // Get current camera distance from origin (should remain constant)
+        const cameraDistance = camera.position.length();
+        
+        // Create spherical coordinates for easier orbital movement
+        const phi = Math.atan2(
+          Math.sqrt(camera.position.x * camera.position.x + camera.position.z * camera.position.z),
+          camera.position.y
+        );
+        const theta = Math.atan2(camera.position.z, camera.position.x);
+        
+        // Update spherical coordinates based on mouse movement
+        const newTheta = theta + deltaMove.x * rotateSpeed; // Left/right movement
+        const newPhi = Math.max(0.1, Math.min(Math.PI - 0.1, phi - deltaMove.y * rotateSpeed));
+        
+        // Convert back to Cartesian coordinates
+        camera.position.x = cameraDistance * Math.sin(newPhi) * Math.cos(newTheta);
+        camera.position.y = cameraDistance * Math.cos(newPhi);
+        camera.position.z = cameraDistance * Math.sin(newPhi) * Math.sin(newTheta);
+        
+        // Look at origin
+        camera.lookAt(0, 0, 0);
+        
+        // Update the plane to match the new camera position
+        plane.lookAt(camera.position);
+      } else {
+        // Update plane to face camera for consistent raycasting
+        plane.lookAt(camera.position);
+        
+        // Get current point from raycaster
+        const point = getPointInWorld(event.clientX, event.clientY);
+        if (!point) return;
+        
+        // Update current drag point
+        currentDragPoint.copy(point);
+        
+        // Calculate drag delta in world coordinates
+        const dragDelta = new THREE.Vector3().subVectors(currentDragPoint, startDragPoint);
+        
+        // Skip tiny movements that might cause glitches
+        if (dragDelta.lengthSq() < 0.00001) return;
+        
+        // Initialize transform matrix for current operation
+        let operationMatrix = new THREE.Matrix4().identity();
+        
+        // Apply transformations based on current mode
+        switch (currentMode) {
+          case 'rotate':
+            // Apply rotation based on camera perspective
+            const rotationAxis = new THREE.Vector3()
+              .crossVectors(camera.position, dragDelta)
+              .normalize();
+            
+            const rotationAmount = dragDelta.length() * 0.1;
+            operationMatrix.makeRotationAxis(rotationAxis, rotationAmount);
+            break;
+            
+          case 'shear':
+            // Apply shear based on drag direction
+            const cameraRight = new THREE.Vector3(1, 0, 0)
+              .applyQuaternion(camera.quaternion);
+            const cameraUp = new THREE.Vector3(0, 1, 0)
+              .applyQuaternion(camera.quaternion);
+            
+            const rightComponent = -dragDelta.dot(cameraRight) * 0.05;
+            const upComponent = -dragDelta.dot(cameraUp) * 0.05;
+            
+            operationMatrix.set(
+              1, rightComponent, 0, 0,
+              upComponent, 1, 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1
+            );
+            break;
+            
+          case 'shift':
+            // Apply translation in screen space
+            operationMatrix.makeTranslation(dragDelta.x, dragDelta.y, dragDelta.z);
+            break;
+            
+          case 'scale':
+            // Scale based on drag distance from center
+            const centerDistance = startDragPoint.length();
+            const currentDistance = currentDragPoint.length();
+            
+            // Avoid division by zero or tiny numbers
+            if (Math.abs(centerDistance) < 0.001) return;
+            
+            const scaleFactor = 1 + (currentDistance - centerDistance) * 0.1;
+            
+            // Avoid extreme scaling factors that could cause glitches
+            if (scaleFactor < 0.1 || scaleFactor > 10) return;
+            
+            operationMatrix.makeScale(scaleFactor, scaleFactor, scaleFactor);
+            break;
+        }
+        
+        // Store the current operation matrix for display
+        currentOperationMatrix.copy(operationMatrix);
+        updateModeMatrixDisplay(currentOperationMatrix);
+        
+        // Apply the operation matrix to the current transform
+        transformMatrix.premultiply(operationMatrix);
+        
+        // Apply the transformation to points
+        applyTransformation();
+        
+        // Reset start point to current point for incremental transformations
+        startDragPoint.copy(currentDragPoint);
+      }
+      
+      previousMousePosition = { x: event.clientX, y: event.clientY };
+    }
+
+    function onMouseUp(event) {
+      if (isDragging && !event.shiftKey) {
+        // Only save state on mouse up, not for every movement
+        saveTransformState();
+      }
+      
+      isDragging = false;
+      document.getElementById('cameraStatus').textContent = 'Camera: Normal';
+      document.body.style.cursor = 'default';
+      
+      // Reset drag points when mouse is released
+      startDragPoint.set(0, 0, 0);
+      currentDragPoint.set(0, 0, 0);
+      
+      // Reset operation matrix to identity when drag ends
+      currentOperationMatrix.identity();
+      updateModeMatrixDisplay(currentOperationMatrix);
+    }
+
+    // Set transformation mode
+    function setMode(mode) {
+      currentMode = mode;
+      
+      // Reset active buttons
+      document.querySelectorAll('.transform-btn').forEach(btn => btn.classList.remove('active'));
+      
+      // Set active button
+      document.getElementById(`${mode}Btn`).classList.add('active');
+      
+      // Update mode display
+      document.getElementById('modeDisplay').textContent = `현재 변환 모드: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+      
+      // Update instructions
+      const instructions = {
+        'rotate': '클릭하고 데이터에 맞게 적절한 rotate 변환을 해보세요.',
+        'shear': '클릭하고 데이터에 맞게 적절한 shear 변환을 해보세요.',
+        'shift': '클릭하고 데이터에 맞게 적절한 shift 변환을 해보세요.',
+        'scale': '클릭하고 데이터에 맞게 적절한 scale 변환을 해보세요.',
+      };
+      
+      document.getElementById('modeInstructions').textContent = instructions[mode];
+      
+      // Reset operation matrix to identity when changing modes
+      currentOperationMatrix.identity();
+      updateModeMatrixDisplay(currentOperationMatrix);
+    }
+
+    // Save current transform state for undo/redo
+    function saveTransformState() {
+      // Remove any redo states if we're creating a new branch
+      if (currentUndoIndex < transformHistory.length - 1) {
+        transformHistory = transformHistory.slice(0, currentUndoIndex + 1);
+      }
+      
+      // Clone the current transform matrix and add to history
+      const matrixClone = new THREE.Matrix4().copy(transformMatrix);
+      transformHistory.push({
+        matrix: matrixClone,
+        positions: origPositions.slice(),
+        labels: pointLabels.slice()
+      });
+      
+      // Update the current index to point to the newest state
+      currentUndoIndex = transformHistory.length - 1;
+      
+      // Enable/disable undo/redo buttons as needed
+      updateUndoRedoButtons();
+    }
+
+    // Apply the matrix at the given history index
+    function applyHistoryState(index) {
+      if (index >= 0 && index < transformHistory.length) {
+        const state = transformHistory[index];
+        
+        // Restore the transformation matrix
+        transformMatrix.copy(state.matrix);
+        
+        // Restore original positions and labels
+        origPositions = state.positions.slice();
+        pointLabels = state.labels.slice();
+        
+        // Apply the transformation
+        applyTransformation();
+        
+        // Update current index
+        currentUndoIndex = index;
+        
+        // Update undo/redo buttons
+        updateUndoRedoButtons();
+      }
+    }
+
+    // Undo the last transformation
+    function undo() {
+      if (currentUndoIndex > 0) {
+        applyHistoryState(currentUndoIndex - 1);
+      }
+    }
+
+    // Redo a previously undone transformation
+    function redo() {
+      if (currentUndoIndex < transformHistory.length - 1) {
+        applyHistoryState(currentUndoIndex + 1);
+      }
+    }
+
+    // Update the enabled/disabled state of undo/redo buttons
+    function updateUndoRedoButtons() {
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      
+      // Enable/disable undo button
+      if (currentUndoIndex > 0) {
+        undoBtn.disabled = false;
+        undoBtn.style.opacity = 1;
+      } else {
+        undoBtn.disabled = true;
+        undoBtn.style.opacity = 0.5;
+      }
+      
+      // Enable/disable redo button
+      if (currentUndoIndex < transformHistory.length - 1) {
+        redoBtn.disabled = false;
+        redoBtn.style.opacity = 1;
+      } else {
+        redoBtn.disabled = true;
+        redoBtn.style.opacity = 0.5;
+      }
+    }
+
+    // Apply current transformation to points
+    function applyTransformation() {
+      // Remove existing points
+      if (points) {
+        scene.remove(points);
+        points = null;
+      }
+      
+      // Create colored spheres based on labels using custom shaders
+      createColoredSpheresWithShaders();
+      
+      // Update matrix display
+      updateMatrixDisplay();
+    }
+
+    // Create colored spheres using custom shaders
+    function createColoredSpheresWithShaders() {
+      // Group points by label
+      const labelGroups = {};
+      
+      transformedPositions = [];
+      
+      for (let i = 0; i < origPositions.length; i += 3) {
+        const pointIndex = i / 3;
+        const label = pointLabels[pointIndex];
+        
+        if (!labelGroups[label]) {
+          labelGroups[label] = [];
+        }
+        
+        // Apply existing transformation to the point
+        const point = new THREE.Vector3(
+          origPositions[i],
+          origPositions[i+1],
+          origPositions[i+2]
+        );
+        
+        point.applyMatrix4(transformMatrix);
+        
+        // Store transformed coordinates
+        transformedPositions.push(point.x, point.y, point.z);
+        
+        // Add the transformed point to the appropriate group
+        labelGroups[label].push(point);
+      }
+      
+      // Create a group for all spheres
+      points = new THREE.Group();
+      
+      // Create sphere geometry to reuse
+      const sphereGeometry = new THREE.SphereGeometry(0.12, 12, 12);
+      
+      // Create spheres for each label group using custom shader materials
+      for (const label in labelGroups) {
+        const group = labelGroups[label];
+        const material = sphereShaderMaterials[label] || sphereShaderMaterials[0];
+        
+        // Create a sphere for each point position
+        for (const position of group) {
+          const sphere = new THREE.Mesh(sphereGeometry, material);
+          sphere.position.copy(position);
+          points.add(sphere);
+        }
+      }
+      
+      scene.add(points);
+    }
+
+    // Update the matrix display in the UI
+    function updateMatrixDisplay() {
+      // Get matrix elements
+      const e = transformMatrix.elements;
+      
+      // Format each element with 2 decimal places
+      const table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      table.style.width = '100%';
+      table.style.textAlign = 'center';
+      table.style.fontFamily = 'monospace';
+      
+      for (let i = 0; i < 4; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < 4; j++) {
+          const cell = document.createElement('td');
+          cell.style.padding = '2px';
+          cell.style.border = '1px solid #ddd';
+          cell.style.backgroundColor = 'white';
+          // THREE.js stores matrix in column-major order
+          const value = e[j * 4 + i];
+          cell.textContent = value.toFixed(2);
+          row.appendChild(cell);
+        }
+        table.appendChild(row);
+      }
+      
+      const matrixDisplay = document.getElementById('matrixDisplay');
+      matrixDisplay.innerHTML = '';
+      matrixDisplay.appendChild(table);
+    }
+
+    // Update the current operation matrix display
+    function updateModeMatrixDisplay(matrix) {
+      // Get matrix elements
+      const e = matrix.elements;
+      
+      // Format each element with 2 decimal places
+      const table = document.createElement('table');
+      table.style.borderCollapse = 'collapse';
+      table.style.width = '100%';
+      table.style.textAlign = 'center';
+      table.style.fontFamily = 'monospace';
+      
+      for (let i = 0; i < 4; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < 4; j++) {
+          const cell = document.createElement('td');
+          cell.style.padding = '2px';
+          cell.style.border = '1px solid #ddd';
+          cell.style.backgroundColor = 'white';
+          // THREE.js stores matrix in column-major order
+          const value = e[j * 4 + i];
+          cell.textContent = value.toFixed(2);
+          row.appendChild(cell);
+        }
+        table.appendChild(row);
+      }
+      
+      const modeMatrixDisplay = document.getElementById('modeMatrixDisplay');
+      modeMatrixDisplay.innerHTML = '';
+      modeMatrixDisplay.appendChild(table);
+    }
+
+    // Apply ReLU activation function
+    function applyReLU() {
+      // Store before ReLU transform for undo history
+      saveTransformState();
+      
+      // Make sure plane orientation is updated to match camera
+      plane.lookAt(camera.position);
+      
+      // Remove existing spheres
+      if (points) scene.remove(points);
+      
+      // Apply ReLU to each point (zero out negative values)
+      const reluPositions = [];
+      
+      for (let i = 0; i < transformedPositions.length; i += 3) {
+        // Get transformed point
+        const x = transformedPositions[i];
+        const y = transformedPositions[i+1];
+        const z = transformedPositions[i+2];
+        
+        // Apply ReLU (set negative values to zero)
+        const reluX = Math.max(0, x);
+        const reluY = Math.max(0, y);
+        const reluZ = Math.max(0, z);
+        
+        // Store ReLU-transformed point
+        reluPositions.push(reluX, reluY, reluZ);
+      }
+      
+      // Create a new array for original positions
+      const newOrigPositions = [];
+      
+      // Store the ReLU positions as new original positions
+      for (let i = 0; i < reluPositions.length; i += 3) {
+        newOrigPositions.push(
+          reluPositions[i],
+          reluPositions[i+1],
+          reluPositions[i+2]
+        );
+      }
+      
+      // Update original positions
+      origPositions = newOrigPositions;
+      transformedPositions = reluPositions.slice();
+      
+      // Update display with colored spheres using shaders
+      createColoredSpheresWithShaders();
+      
+      // Reset transformation matrix since we've baked the transformation into the points
+      transformMatrix.identity();
+      
+      // Update matrix display
+      updateMatrixDisplay();
+      
+      // Set the display text to indicate ReLU was applied
+      document.getElementById('modeDisplay').textContent = "ReLU Applied";
+      document.getElementById('modeInstructions').textContent = "All negative values set to zero";
+      
+      // Restore the current mode display after a delay
+      setTimeout(() => {
+        document.getElementById('modeDisplay').textContent = `Current Mode: ${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}`;
+        
+        // Restore instructions
+        const instructions = {
+          'rotate': '클릭하고 데이터에 맞게 적절한 rotate 변환을 해보세요.',
+          'shear': '클릭하고 데이터에 맞게 적절한 shear 변환을 해보세요.',
+          'shift': '클릭하고 데이터에 맞게 적절한 shift 변환을 해보세요.',
+          'scale': '클릭하고 데이터에 맞게 적절한 scale 변환을 해보세요.',
+        };
+        document.getElementById('modeInstructions').textContent = instructions[currentMode];
+        
+        // Restore appropriate mode matrix
+        setMode(currentMode);
+      }, 1500);
+      
+      
+      // Save new state after ReLU
+      saveTransformState();
+    }
+
+    // Create random points - fallback if no dataset is provided
+    function createPoints(count) {
+      origPositions = [];
+      pointLabels = [];
+      
+      // Create two distinct groups of points
+      const halfCount = Math.floor(count / 2);
+      
+      // Group 1 - around (-2, -2, 0)
+      for (let i = 0; i < halfCount; i++) {
+        origPositions.push(
+          -2 + (Math.random() - 0.5),
+          -2 + (Math.random() - 0.5),
+          (Math.random() - 0.5)
+        );
+        pointLabels.push(0);
+      }
+      
+      // Group 2 - around (2, 2, 0)
+      for (let i = 0; i < count - halfCount; i++) {
+        origPositions.push(
+          2 + (Math.random() - 0.5),
+          2 + (Math.random() - 0.5),
+          (Math.random() - 0.5)
+        );
+        pointLabels.push(1);
+      }
+      
+      // Reset transformation
+      transformMatrix.identity();
+      
+      // Initialize history with current state
+      transformHistory = [];
+      currentUndoIndex = -1;
+      saveTransformState();
+      
+      // Apply transformation
+      applyTransformation();
+    }
+
+    // Reset all transformations and reload dataset
+    function resetAll() {
+      // Reload the dataset
+      loadSelectedDataset();
+    }
+
+    // Function to load a 2D dataset
+    function load2DDataset(data) {
+      // Clear any existing points
+      if (points) scene.remove(points);
+      
+      // Reset original positions and transformation
+      origPositions = [];
+      pointLabels = [];
+      transformMatrix.identity();
+      
+      // Parse and project the 2D data to 3D (on the XY plane, Z=0)
+      for (const point of data) {
+        // Extract the x, y, and label from each data point
+        const { x, y, label } = point;
+        
+        // Add the point to original positions
+        origPositions.push(x, y, 0);
+        
+        // Keep track of the label for coloring
+        pointLabels.push(label);
+      }
+      
+      // Reset transformation history
+      transformHistory = [];
+      currentUndoIndex = -1;
+      
+      // Save initial state for undo history
+      saveTransformState();
+      
+      // Create colored spheres based on labels using shaders
+      createColoredSpheresWithShaders();
+      
+      // Update matrix display
+      updateMatrixDisplay();
+    }
+
+    // Function to parse CSV data
+    function parseCSVDataset(csvText) {
+      const lines = csvText.trim().split('\n');
+      const data = [];
+      
+      // Skip header if present
+      const startLine = lines[0].includes('x,y,label') ? 1 : 0;
+      
+      for (let i = startLine; i < lines.length; i++) {
+        const values = lines[i].split(',');
+        
+        if (values.length >= 3) {
+          data.push({
+            x: parseFloat(values[0]),
+            y: parseFloat(values[1]),
+            label: parseInt(values[2])
+          });
+        }
+      }
+      
+      return data;
+    }
+  </script>
+</body>
+</html>
